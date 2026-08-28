@@ -10,8 +10,8 @@ Check items off as we go. Re-order or split a milestone if reality disagrees wit
 
 - [x] Initialize Next.js (App Router, TypeScript) in the repo
 - [x] Create the Supabase project — confirm `pgvector` is enabled when we run the first migration (Milestone 1)
-- [ ] Wire the Supabase client (`lib/db`) + environment variables (`.env.local`, gitignored) — client code is written, waiting on real project credentials to actually test the connection
-- [x] Wire the Euri gateway client wrapper (`lib/llm`)
+- [x] Wire the Supabase client (`lib/db`) + environment variables (`.env.local`, gitignored) — verified live: connects and authenticates
+- [x] Wire the Euri gateway client wrapper (`lib/llm`) — verified live against the free `gpt-4o-mini` model
 - [x] Add zod as the validation layer
 - [x] Confirm `npm run dev` runs a blank app locally
 
