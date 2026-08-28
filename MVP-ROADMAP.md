@@ -17,15 +17,15 @@ Check items off as we go. Re-order or split a milestone if reality disagrees wit
 
 ## Milestone 1 — Spec schema + Intake (Blueprint §07)
 
-- [ ] Write the Spec zod schema (`lib/pipeline/types`) — every field from Blueprint §02
-- [ ] Create the `specs`/`agents` tables in Supabase (migration), including `schema_version`
-- [ ] Build the registry module (`lib/pipeline/registry.ts`)
-- [ ] Build the chat `IntakeAdapter` (question set + required fields for the chat type)
-- [ ] Build the Intake stage: free-text request → Euri gateway → validated Spec
-- [ ] Implement clarifying-question logic — fires only for fields Intake genuinely can't resolve
-- [ ] Minimal UI: request form + clarifying-question follow-up
-- [ ] Run a fixed set of real-shaped test requests; confirm each produces a schema-valid Spec
-- [ ] Milestone 1 demo: request in → Spec out, nothing downstream wired yet
+- [x] Write the Spec zod schema (`lib/pipeline/types`) — every field from Blueprint §02
+- [x] Create the `agents` table in Supabase (migration `0001_agents.sql`), including `schema_version` and `pgvector` enabled
+- [x] Build the registry module (`lib/pipeline/registry.ts`)
+- [x] Build the chat `IntakeAdapter` (question set + required fields for the chat type)
+- [x] Build the Intake stage: free-text request → Euri gateway → validated Spec (`/api/intake`)
+- [x] Implement clarifying-question logic — fires only for fields Intake genuinely can't resolve
+- [x] Minimal UI: request form + clarifying-question follow-up (`src/app/page.tsx`)
+- [x] Run a fixed set of real-shaped test requests; confirm each produces a schema-valid Spec — 5/5 passed live against Supabase + Euri, including both clarification round-trips
+- [x] Milestone 1 demo: request in → Spec out, nothing downstream wired yet — **Milestone 1 complete**
 
 ## Milestone 2 — Build
 
