@@ -6,10 +6,22 @@ export interface IntakeAdapter {
   promptGuidance: string;
 }
 
+export interface BuildAdapter {
+  // Extra instructions folded into Build's prompt-writing + tool-selection
+  // call -- how a system prompt should read for this type, anything about
+  // tool selection specific to it.
+  promptGuidance: string;
+  // Which CONNECTOR_LIBRARY ids this type may select from -- the "tool
+  // subset valid for this type" (Blueprint §03). Build is schema-constrained
+  // to this list; it cannot select or invent anything outside it.
+  allowedConnectorIds: string[];
+}
+
 export interface Adapter {
   intake: IntakeAdapter;
-  // build / assemble / test / deploy hooks join here as each milestone
-  // that actually needs them lands -- Blueprint §03.
+  build: BuildAdapter;
+  // assemble / test / deploy hooks join here as each milestone that
+  // actually needs them lands -- Blueprint §03.
 }
 
 const adapters: Record<string, Adapter> = {};

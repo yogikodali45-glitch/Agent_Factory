@@ -14,7 +14,7 @@ Full context lives in four planning docs in this repo's `docs/` folder — read 
 
 Live task tracker: `MVP-ROADMAP.md`. Check items off there as they're done — it's the source of truth for what's next, ahead of anything stated here.
 
-**Milestone 1 is done** (Blueprint §07): Spec schema, registry, chat `IntakeAdapter`, and the Intake stage (`/api/intake`) all working in isolation, verified live against Supabase + Euri with 5 real-shaped test requests. Next up: **Milestone 2 — Build** (persona/prompt generation, tool selection from the connector library). No Assemble, Test, or Deploy yet — not even stubbed.
+**Milestones 1–2 are done.** Intake (`/api/intake`, Blueprint §07) and Build (`/api/build`) both work in isolation, verified live against Supabase + Euri. Next up: **Milestone 3 — Assemble** (knowledge-source ingestion into the per-agent `pgvector` index). No Test or Deploy yet — not even stubbed.
 
 Don't build ahead of the current milestone. Voice/email/automation agent types, cross-channel agents, marketplace connectors, team accounts, billing, and analytics are explicitly out of scope until later phases (PRD §05, MVP §02) — don't add scaffolding for them "while we're in there."
 

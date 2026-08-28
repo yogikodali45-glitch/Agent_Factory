@@ -29,12 +29,12 @@ Check items off as we go. Re-order or split a milestone if reality disagrees wit
 
 ## Milestone 2 — Build
 
-- [ ] Build the chat `BuildAdapter` (prompt template + valid tool subset)
-- [ ] Persona/system-prompt generation from the Spec (Euri gateway call)
-- [ ] Define connector/tool library v0 — small fixed set (FAQ lookup, one booking-style action, escalation)
-- [ ] Tool-selection logic against `required_tools` — selects, never invents integration code
-- [ ] Persist build artifacts (prompt, tool bindings) to Postgres
-- [ ] Build stage wired as its own invocation: reads the Spec, writes agent config
+- [x] Build the chat `BuildAdapter` (prompt template + valid tool subset)
+- [x] Persona/system-prompt generation from the Spec (Euri gateway call)
+- [x] Define connector/tool library v0 — small fixed set (`faq_lookup`, `booking`, `escalate_to_human`)
+- [x] Tool-selection logic against `required_tools` — schema-constrained to the type's allowed set, can't invent; verified it actually discriminates (3 test cases, each selecting a different correct subset)
+- [x] Persist build artifacts (prompt, tool bindings) to Postgres (`build_artifacts`, cascade-deletes with its agent)
+- [x] Build stage wired as its own invocation: reads the Spec, writes agent config (`/api/build`) — **Milestone 2 complete**
 
 ## Milestone 3 — Assemble
 

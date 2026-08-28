@@ -55,3 +55,17 @@ export const IntakeExtractionSchema = z.discriminatedUnion("status", [
 ]);
 
 export type IntakeExtraction = z.infer<typeof IntakeExtractionSchema>;
+
+// What Build's LLM call must return. selected_tools is constrained to
+// whatever connector ids the type's BuildAdapter actually allows -- built
+// per-request, not a static export, since that allow-list is adapter data,
+// not a schema constant (Blueprint §03: Build can't select or invent
+// anything outside the type's allowed subset).
+export function buildResultSchema(allowedConnectorIds: string[]) {
+  return z.object({
+    system_prompt: z.string().min(1),
+    selected_tools: z.array(z.enum(allowedConnectorIds as [string, ...string[]])).default([]),
+  });
+}
+
+export type BuildResult = z.infer<ReturnType<typeof buildResultSchema>>;
