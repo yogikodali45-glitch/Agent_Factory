@@ -22,7 +22,7 @@ Don't build ahead of the current milestone. Voice/email/automation agent types, 
 
 - **Language:** TypeScript everywhere — Next.js (App Router) for both the requester-facing frontend and the pipeline's API routes. One language, one deploy target, no cross-service auth/CORS to manage between a separate backend and frontend.
 - **Database:** Postgres via Supabase, `pgvector` enabled. One service covers relational state (Spec, build artifacts, test results, deploy config), the vector index Assemble needs per agent, auth, and file storage.
-- **LLM:** Claude API for every call in the pipeline — Intake parsing, Build generation, Test grading and adversarial checks. Decided in PRD §06 / Blueprint §06, not open for reconsideration without a reason.
+- **LLM:** Euri AI gateway (OpenAI-compatible; https://api.euron.one/api/v1), not Anthropic or OpenAI directly — same gateway the Stock Market project uses. Used for every call in the pipeline: Intake parsing, Build generation, Test grading and adversarial checks. Decided in PRD §06 / Blueprint §06. Pick the model per use case in code (`EURI_DEFAULT_MODEL` is only a fallback) — don't hardcode one model globally.
 - **Validation:** zod, at every stage boundary. This is the literal implementation of Blueprint §04's "schema-validated handoffs only, never free text" — a stage that skips validating its input or output is a bug, not a shortcut.
 - **Hosting:** Vercel, by default. Not locked in — revisit if a pipeline run needs longer than serverless limits allow.
 - **Package manager:** npm. (pnpm caused real friction on Windows on a prior project here — strict "ignored builds" checks blocking scripts, compounded by an SSL cert issue — not worth re-hitting.)
@@ -37,20 +37,21 @@ Vercel functions have execution time limits; a 5-stage pipeline with retries can
 - **The Spec is the only handoff.** Every stage reads the previous stage's schema-validated output — never the requester's original free text, never another stage's internals (Blueprint §02).
 - **Nothing invented.** Build selects tools from the connector library against `required_tools`; it never generates integration code per request (PRD §03).
 
-## Proposed structure
+## Structure
 
-Starting point — expected to shift once Milestone 1 is actually being built:
+`src/app`, `src/lib/db`, and `src/lib/llm` exist already (Next.js scaffolded, Supabase and Euri client wrappers written). The rest is the plan for Milestone 1 onward:
 
 ```
-/app
-  /api/{intake,build,assemble,test,deploy}   one route per stage
-  /(requester)                               submit request, clarifying Qs, pass/fail review, try-the-agent
-/lib
-  /pipeline/types        Spec schema (zod) + per-stage input/output types
-  /pipeline/registry.ts
-  /pipeline/adapters/chat
-  /db                    Supabase client + queries
-  /llm                   Claude API wrapper
+/src
+  /app
+    /api/{intake,build,assemble,test,deploy}   one route per stage
+    /(requester)                               submit request, clarifying Qs, pass/fail review, try-the-agent
+  /lib
+    /pipeline/types        Spec schema (zod) + per-stage input/output types
+    /pipeline/registry.ts
+    /pipeline/adapters/chat
+    /db                    Supabase client + queries (exists)
+    /llm                   Euri gateway wrapper (exists)
 /supabase/migrations
 /docs                    the 4 planning docs
 ```

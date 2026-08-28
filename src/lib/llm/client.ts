@@ -1,5 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+export const euri = new OpenAI({
+  apiKey: process.env.EURI_API_KEY,
+  baseURL: process.env.EURI_API_BASE || "https://api.euron.one/api/v1",
 });

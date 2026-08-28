@@ -9,9 +9,9 @@ Check items off as we go. Re-order or split a milestone if reality disagrees wit
 ## Setup — project scaffolding
 
 - [x] Initialize Next.js (App Router, TypeScript) in the repo
-- [ ] Create the Supabase project; enable the `pgvector` extension — blocked on you (supabase.com)
+- [x] Create the Supabase project — confirm `pgvector` is enabled when we run the first migration (Milestone 1)
 - [ ] Wire the Supabase client (`lib/db`) + environment variables (`.env.local`, gitignored) — client code is written, waiting on real project credentials to actually test the connection
-- [x] Wire the Claude API client wrapper (`lib/llm`)
+- [x] Wire the Euri gateway client wrapper (`lib/llm`)
 - [x] Add zod as the validation layer
 - [x] Confirm `npm run dev` runs a blank app locally
 
@@ -21,7 +21,7 @@ Check items off as we go. Re-order or split a milestone if reality disagrees wit
 - [ ] Create the `specs`/`agents` tables in Supabase (migration), including `schema_version`
 - [ ] Build the registry module (`lib/pipeline/registry.ts`)
 - [ ] Build the chat `IntakeAdapter` (question set + required fields for the chat type)
-- [ ] Build the Intake stage: free-text request → Claude API → validated Spec
+- [ ] Build the Intake stage: free-text request → Euri gateway → validated Spec
 - [ ] Implement clarifying-question logic — fires only for fields Intake genuinely can't resolve
 - [ ] Minimal UI: request form + clarifying-question follow-up
 - [ ] Run a fixed set of real-shaped test requests; confirm each produces a schema-valid Spec
@@ -30,7 +30,7 @@ Check items off as we go. Re-order or split a milestone if reality disagrees wit
 ## Milestone 2 — Build
 
 - [ ] Build the chat `BuildAdapter` (prompt template + valid tool subset)
-- [ ] Persona/system-prompt generation from the Spec (Claude API call)
+- [ ] Persona/system-prompt generation from the Spec (Euri gateway call)
 - [ ] Define connector/tool library v0 — small fixed set (FAQ lookup, one booking-style action, escalation)
 - [ ] Tool-selection logic against `required_tools` — selects, never invents integration code
 - [ ] Persist build artifacts (prompt, tool bindings) to Postgres
