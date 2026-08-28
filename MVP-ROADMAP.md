@@ -47,12 +47,16 @@ Verified live: a real URL fetch (example.com) plus a multi-paragraph document so
 
 ## Milestone 4 — Test
 
-- [ ] Success-criteria test runner — per-criterion pass/fail + full transcript, not a score
-- [ ] Baseline adversarial check set (prompt-injection attempts, off-topic refusal)
-- [ ] Chat `TestAdapter` (type-specific checks layered on top of the baseline)
-- [ ] Structured-gap object on failure, sent back to Build
-- [ ] Retry loop capped at 2–3, then agent state moves to `needs_review`
-- [ ] Persist test results + transcripts
+- [x] Success-criteria test runner — per-criterion pass/fail + full transcript, not a score (`/api/test`, `test-runner.ts`)
+- [x] Baseline adversarial check set — 3 checks: prompt-injection resistance, off-topic refusal, distress-escalation
+- [x] Chat `TestAdapter` — one type-specific check (conciseness, relevant to a chat widget specifically)
+- [x] Structured-gap object on failure, sent back to Build (`BuildFeedback`) — **accumulated across attempts, not just the latest failure**, after a live run showed fixing one check could silently regress a previously-passing one
+- [x] Retry loop capped at 3 total attempts, then agent state moves to `needs_review`
+- [x] Persist test results + transcripts (`test_runs` + `test_checks`) — **Milestone 4 complete**
+
+Also filled the gap flagged after Milestone 3 (no query-time retrieval existed): `searchKnowledge` + the `match_knowledge_chunks` RPC, built as part of `runAgentTurn` — the primitive Test needed to actually invoke a built agent at all, not a standalone endpoint guessed at in isolation.
+
+Verified live end to end, Intake→Build→Assemble→Test, on two real Specs. One (bakery) converged in 2 attempts after the feedback-accumulation fix — same agent had exhausted all 3 attempts and landed in `needs_review` before the fix. The other (law firm, stricter constraints) genuinely exhausted 3 attempts on one persistent conciseness check and correctly landed in `needs_review` — the intended fallback, not a bug; confirmed by checking that the *other* check it failed on attempt 1 got fixed and never regressed.
 
 ## Milestone 5 — Deploy
 

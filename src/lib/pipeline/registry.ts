@@ -1,3 +1,5 @@
+import type { BaselineCheck } from "./baseline-checks";
+
 export interface IntakeAdapter {
   // Extra instructions folded into Intake's extraction prompt for this
   // agent type -- how to interpret vague requests, what "done" looks like
@@ -17,11 +19,18 @@ export interface BuildAdapter {
   allowedConnectorIds: string[];
 }
 
+export interface TestAdapter {
+  // Checks layered on top of BASELINE_CHECKS, specific to this type.
+  // Most types will have none -- only add one when it's genuinely
+  // type-specific, not just "another good idea" (Blueprint §03).
+  additionalChecks: BaselineCheck[];
+}
+
 export interface Adapter {
   intake: IntakeAdapter;
   build: BuildAdapter;
-  // assemble / test / deploy hooks join here as each milestone that
-  // actually needs them lands -- Blueprint §03.
+  test: TestAdapter;
+  // deploy hooks join here once that milestone lands -- Blueprint §03.
 }
 
 const adapters: Record<string, Adapter> = {};
