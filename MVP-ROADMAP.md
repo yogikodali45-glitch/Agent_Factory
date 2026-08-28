@@ -38,10 +38,12 @@ Check items off as we go. Re-order or split a milestone if reality disagrees wit
 
 ## Milestone 3 — Assemble
 
-- [ ] Knowledge-source ingestion (docs/URLs) → chunk + embed
-- [ ] Write embeddings to `pgvector`, scoped per `agent_id`
-- [ ] Chat `AssembleAdapter` (only if chat needs type-specific ingestion handling)
-- [ ] Assemble stage wired as its own invocation
+- [x] Knowledge-source ingestion (docs/URLs) → chunk + embed — real HTTP fetch + HTML stripping for `url` sources (cheerio), literal text for `document` sources, paragraph-based chunker, `text-embedding-3-small` via Euri
+- [x] Write embeddings to `pgvector`, scoped per `agent_id` (`knowledge_chunks`, cascade-deletes with its agent)
+- [x] Chat `AssembleAdapter` — skipped on purpose: ingestion only branches on *source* type (url vs. document), never on *agent* type, so there's nothing for a per-type adapter to customize yet
+- [x] Assemble stage wired as its own invocation (`/api/assemble`) — **Milestone 3 complete**
+
+Verified live: a real URL fetch (example.com) plus a multi-paragraph document source that correctly split into 3 chunks, and a semantic-retrieval sanity check — 3 targeted queries against those chunks each matched the right one by cosine similarity (computed in the test, not yet a real endpoint — see below).
 
 ## Milestone 4 — Test
 

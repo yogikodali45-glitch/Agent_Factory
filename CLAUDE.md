@@ -14,7 +14,9 @@ Full context lives in four planning docs in this repo's `docs/` folder — read 
 
 Live task tracker: `MVP-ROADMAP.md`. Check items off there as they're done — it's the source of truth for what's next, ahead of anything stated here.
 
-**Milestones 1–2 are done.** Intake (`/api/intake`, Blueprint §07) and Build (`/api/build`) both work in isolation, verified live against Supabase + Euri. Next up: **Milestone 3 — Assemble** (knowledge-source ingestion into the per-agent `pgvector` index). No Test or Deploy yet — not even stubbed.
+**Milestones 1–3 are done.** Intake (`/api/intake`), Build (`/api/build`), and Assemble (`/api/assemble`) all work in isolation, verified live against Supabase + Euri. Next up: **Milestone 4 — Test**. No Deploy yet — not even stubbed.
+
+Note: Assemble only *ingests* knowledge into `knowledge_chunks` — there's no query-time retrieval endpoint yet (no "search this agent's knowledge for X" function exists in the app). That gets built whenever a stage first needs it to actually answer a question with it — likely Test (grading against success_criteria) or Deploy (the live agent). Don't assume it exists.
 
 Don't build ahead of the current milestone. Voice/email/automation agent types, cross-channel agents, marketplace connectors, team accounts, billing, and analytics are explicitly out of scope until later phases (PRD §05, MVP §02) — don't add scaffolding for them "while we're in there."
 

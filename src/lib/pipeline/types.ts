@@ -8,6 +8,8 @@ export const KnowledgeSourceSchema = z.object({
   label: z.string().optional(),
 });
 
+export type KnowledgeSource = z.infer<typeof KnowledgeSourceSchema>;
+
 export const ClarificationEntrySchema = z.object({
   question: z.string().min(1),
   answer: z.string().min(1),
