@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createServerClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/client";
 import { SpecSchema } from "@/lib/pipeline/types";
 import { runAgentTurn } from "@/lib/pipeline/agent";
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ age
     );
   }
 
-  const supabase = createServerClient();
+  const supabase = createAdminClient();
   const { data: agentRow, error: fetchError } = await supabase
     .from("agents")
     .select("id, spec, status")

@@ -72,14 +72,18 @@ Verified live end to end: full pipeline through Test, provisioned, chatted with 
 
 ## Milestone 6 — Requester frontend, full flow
 
-- [ ] Submit-request page
-- [ ] Clarifying-questions page
-- [ ] Build-status view (polling or Supabase Realtime)
-- [ ] Pass/fail results + transcript review page
-- [ ] Try-the-agent chat interface
-- [ ] Go-live action
-- [ ] Supabase Auth wired in — just enough for a requester to own and return to their agent
-- [ ] Data scoping enforced (RLS): one business's Spec/knowledge is never visible to another
+- [x] Submit-request page (`/new`)
+- [x] Clarifying-questions page (same page, second step)
+- [x] Build-status view — no polling needed: the frontend itself drives Build→Assemble→Test→Deploy-provision sequentially, so the progress label is just whichever `await` is in flight. The business owner never sees the pipeline underneath (PRD personas) — only "try it" and "go live" are real clicks.
+- [x] Pass/fail results + transcript review page (`/agents/[id]`)
+- [x] Try-the-agent chat interface (same page, hits the same public `/api/chat/[agentId]` the embed widget uses)
+- [x] Go-live action (same page, calls `/api/deploy/promote`)
+- [x] Supabase Auth wired in — magic link (email only, no password) via a Bearer-token pattern, not cookie/SSR sessions — no `@supabase/ssr`, no middleware, fits the existing "browser only talks to our own API routes" architecture
+- [x] Data scoping enforced (RLS) on all 6 tables — **and** explicit `owner_id` checks in every pipeline route, which is the mechanism actually doing the enforcing since every route uses the service-role client (bypasses RLS by design); RLS is real defense-in-depth, not decorative — **Milestone 6 complete**
+
+Renamed the service-role client `createServerClient` → `createAdminClient` mid-milestone — that name was about to collide with a very different concept (a real user-session-aware client) and the confusion would have been a landmine for later.
+
+Verified with two real test users (created via the admin API, magic-link sessions obtained via `admin.generateLink` + injected into the browser — same mechanism a real magic link uses, no email inbox needed) in both the API layer and a real browser: full pipeline run, live try-it chat, go-live, and the negative cases — unauthenticated blocked (401), wrong owner blocked on every route (403), a **raw RLS query** (anon key + the wrong user's own JWT) returning zero rows for the other user's agent, and the actual UI confirming a second user's home page shows "No agents yet" and a direct link to the first user's agent shows "belongs to a different account." Test users and data cleaned up after.
 
 ## Milestone 7 — MVP validation & launch
 

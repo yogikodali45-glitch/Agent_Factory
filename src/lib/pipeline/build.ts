@@ -1,5 +1,5 @@
 import { euri, DEFAULT_MODEL } from "@/lib/llm/client";
-import { createServerClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/client";
 import { getAdapter } from "./registry";
 import { CONNECTOR_LIBRARY } from "./connectors";
 import { buildResultSchema, type Spec, type BuildResult } from "./types";
@@ -116,7 +116,7 @@ export async function buildAndPersist(spec: Spec, feedback?: BuildFeedback[]): P
     return { ok: false, error: "Build failed to produce a valid result after retrying" };
   }
 
-  const supabase = createServerClient();
+  const supabase = createAdminClient();
   const { error: upsertError } = await supabase.from("build_artifacts").upsert({
     agent_id: spec.agent_id,
     system_prompt: build.system_prompt,

@@ -1,5 +1,5 @@
 import { euri, EMBEDDING_MODEL } from "@/lib/llm/client";
-import { createServerClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/client";
 
 export interface RetrievedChunk {
   content: string;
@@ -19,7 +19,7 @@ export async function searchKnowledge(
   const embedRes = await euri.embeddings.create({ model: EMBEDDING_MODEL, input: [query] });
   const queryEmbedding = embedRes.data[0].embedding;
 
-  const supabase = createServerClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase.rpc("match_knowledge_chunks", {
     p_agent_id: agentId,
     p_query_embedding: JSON.stringify(queryEmbedding),

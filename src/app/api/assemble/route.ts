@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { euri, EMBEDDING_MODEL } from "@/lib/llm/client";
-import { createServerClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/getUser";
 import { SpecSchema } from "@/lib/pipeline/types";
 import { extractSource, chunkText } from "@/lib/pipeline/ingest";
 
@@ -15,6 +16,11 @@ interface PendingChunk {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getUser(req);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   let json: unknown;
   try {
     json = await req.json();
@@ -30,10 +36,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const supabase = createServerClient();
+  const supabase = createAdminClient();
   const { data: agentRow, error: fetchError } = await supabase
     .from("agents")
-    .select("id, spec")
+    .select("id, spec, owner_id")
     .eq("id", parsedBody.data.agent_id)
     .maybeSingle();
 
@@ -42,6 +48,9 @@ export async function POST(req: NextRequest) {
   }
   if (!agentRow) {
     return NextResponse.json({ error: "No agent with that id" }, { status: 404 });
+  }
+  if (agentRow.owner_id !== user.id) {
+    return NextResponse.json({ error: "This agent belongs to a different account" }, { status: 403 });
   }
   if (!agentRow.spec) {
     return NextResponse.json({ error: "Agent has no Spec yet -- run Intake first" }, { status: 400 });

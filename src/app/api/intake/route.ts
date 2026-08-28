@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { euri, DEFAULT_MODEL } from "@/lib/llm/client";
-import { createServerClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/getUser";
 import { getAdapter } from "@/lib/pipeline/registry";
 import "@/lib/pipeline/adapters";
 import {
@@ -97,6 +98,11 @@ async function extractSpec(
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getUser(req);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   let json: unknown;
   try {
     json = await req.json();
@@ -163,9 +169,10 @@ export async function POST(req: NextRequest) {
   }
   const spec = specResult.data;
 
-  const supabase = createServerClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("agents").insert({
     id: spec.agent_id,
+    owner_id: user.id,
     agent_type: spec.agent_type,
     schema_version: spec.schema_version,
     status: "spec_ready",

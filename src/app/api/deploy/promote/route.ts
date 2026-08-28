@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createServerClient } from "@/lib/db/client";
+import { createAdminClient } from "@/lib/db/client";
+import { getUser } from "@/lib/auth/getUser";
 
 const RequestBodySchema = z.object({
   agent_id: z.string().uuid(),
 });
 
 export async function POST(req: NextRequest) {
+  const user = await getUser(req);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   let json: unknown;
   try {
     json = await req.json();
@@ -22,10 +28,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const supabase = createServerClient();
+  const supabase = createAdminClient();
   const { data: agentRow, error: fetchError } = await supabase
     .from("agents")
-    .select("id, status")
+    .select("id, status, owner_id")
     .eq("id", parsedBody.data.agent_id)
     .maybeSingle();
 
@@ -34,6 +40,9 @@ export async function POST(req: NextRequest) {
   }
   if (!agentRow) {
     return NextResponse.json({ error: "No agent with that id" }, { status: 404 });
+  }
+  if (agentRow.owner_id !== user.id) {
+    return NextResponse.json({ error: "This agent belongs to a different account" }, { status: 403 });
   }
   if (agentRow.status === "deployed") {
     return NextResponse.json({ agent_id: agentRow.id, status: "deployed" });
