@@ -60,11 +60,15 @@ Verified live end to end, Intake→Build→Assemble→Test, on two real Specs. O
 
 ## Milestone 5 — Deploy
 
-- [ ] Chat `DeployAdapter` (provisions a chat widget + API endpoint)
-- [ ] Embeddable chat widget that talks to the deployed agent
-- [ ] "Try it yourself" mode before the agent reaches real customers
-- [ ] Promote-to-live action (agent state → `deployed`)
-- [ ] Deploy stage wired as its own invocation
+- [x] Chat `DeployAdapter` — declares its channels (`chat_widget`, `api`); genuinely type-specific, unlike Assemble's skip
+- [x] Embeddable chat widget that talks to the deployed agent — framework-free JS at `/api/widget/[agentId]`, agent id + origin baked in server-side, drop-in `<script>` tag for any external site
+- [x] "Try it yourself" mode before the agent reaches real customers — `/api/chat/[agentId]` works as soon as status is `ready_to_try`, before promotion
+- [x] Promote-to-live action (agent state → `deployed`) — `/api/deploy/promote`
+- [x] Deploy stage wired as its own invocation (`/api/deploy`) — **Milestone 5 complete**
+
+Note for later: this milestone is the *backend* for try-it-yourself and go-live — the widget, the chat API, the provision/promote endpoints, all API-only like every milestone before it. Milestone 6's "Try-the-agent chat interface" and "Go-live action" are the actual UI *inside the Agent Factory app* that calls these; they're not duplicates of what's here.
+
+Verified live end to end: full pipeline through Test, provisioned, chatted with while `ready_to_try` (multi-turn — second turn correctly used context from the first without it being restated), promoted to `deployed`, chat continued working after. Also confirmed the negative cases: Deploy rejects an agent that hasn't passed Test (400), chat rejects an agent that hasn't been through Deploy (403). Widget script fetched and confirmed it bakes in the correct agent id and origin. Test data cleaned up after.
 
 ## Milestone 6 — Requester frontend, full flow
 

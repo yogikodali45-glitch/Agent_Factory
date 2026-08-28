@@ -14,7 +14,7 @@ Full context lives in four planning docs in this repo's `docs/` folder — read 
 
 Live task tracker: `MVP-ROADMAP.md`. Check items off there as they're done — it's the source of truth for what's next, ahead of anything stated here.
 
-**Milestones 1–4 are done.** Intake, Build, Assemble, and Test (`/api/intake`, `/api/build`, `/api/assemble`, `/api/test`) all work, verified live end to end against Supabase + Euri, including the retry-to-Build loop actually converging on a real failure. Next up: **Milestone 5 — Deploy**.
+**Milestones 1–5 are done.** Intake, Build, Assemble, Test, and Deploy all work, verified live end to end against Supabase + Euri, including the retry-to-Build loop actually converging on a real failure, and a real embeddable widget talking to a deployed agent across a full try-it-yourself → promote-to-live cycle. Next up: **Milestone 6 — Requester frontend**, the first milestone since Intake to touch the UI. No Auth yet, so nothing is scoped per-owner — don't assume `agents` rows are private.
 
 `runAgentTurn` (`src/lib/pipeline/agent.ts`) is the "invoke the built agent" primitive — system prompt + retrieved knowledge (`searchKnowledge`) + a user message → a reply. This is what Deploy will expose live; Test already depends on it to generate anything gradeable.
 

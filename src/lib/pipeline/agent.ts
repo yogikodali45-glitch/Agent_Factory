@@ -2,12 +2,21 @@ import { euri, DEFAULT_MODEL } from "@/lib/llm/client";
 import { searchKnowledge } from "./retrieval";
 import type { Spec } from "./types";
 
+export interface AgentTurnMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface AgentTurnInput {
   agentId: string;
   spec: Spec;
   systemPrompt: string;
   selectedTools: string[];
   userMessage: string;
+  // Prior turns, oldest first. Optional and unused by Test (each check is
+  // independent) -- real for the deployed chat widget, which is an
+  // actual multi-turn conversation.
+  history?: AgentTurnMessage[];
 }
 
 // The actual "run the built agent" primitive -- what Test needs to
@@ -30,6 +39,7 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<string> {
     model: DEFAULT_MODEL,
     messages: [
       { role: "system", content: input.systemPrompt + knowledgeContext },
+      ...(input.history ?? []),
       { role: "user", content: input.userMessage },
     ],
     temperature: 0.4,

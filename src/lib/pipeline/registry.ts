@@ -26,11 +26,18 @@ export interface TestAdapter {
   additionalChecks: BaselineCheck[];
 }
 
+export interface DeployAdapter {
+  // Which channels this type provisions -- unlike Assemble, this is
+  // genuinely type-specific: chat gets a widget + API, voice would get a
+  // phone number, email an inbox connection. Blueprint §03.
+  channels: string[];
+}
+
 export interface Adapter {
   intake: IntakeAdapter;
   build: BuildAdapter;
   test: TestAdapter;
-  // deploy hooks join here once that milestone lands -- Blueprint §03.
+  deploy: DeployAdapter;
 }
 
 const adapters: Record<string, Adapter> = {};
