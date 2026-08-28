@@ -10,6 +10,8 @@ Full context lives in four planning docs in this repo's `docs/` folder — read 
 
 ## Current focus
 
+Live task tracker: `MVP-ROADMAP.md`. Check items off there as they're done — it's the source of truth for what's next, ahead of anything stated here.
+
 **Milestone 1** (Blueprint §07): the Spec schema + Intake stage, working in isolation. No Build, Assemble, Test, or Deploy yet — not even stubbed. Done when a fixed set of real-shaped requests each produce a schema-valid Spec, resolved through the registry, with clarifying questions firing only for fields Intake genuinely can't resolve.
 
 Don't build ahead of the current milestone. Voice/email/automation agent types, cross-channel agents, marketplace connectors, team accounts, billing, and analytics are explicitly out of scope until later phases (PRD §05, MVP §02) — don't add scaffolding for them "while we're in there."
