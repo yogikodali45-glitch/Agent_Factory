@@ -3,6 +3,7 @@ node_modules/
 out/
 build/
 dist/
+/coverage
 
 .env
 .env.local
@@ -12,9 +13,13 @@ dist/
 
 *.log
 npm-debug.log*
+*.pem
 
 .DS_Store
 Thumbs.db
 
 .vscode/
 .idea/
+
+*.tsbuildinfo
+next-env.d.ts

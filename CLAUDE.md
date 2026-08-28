@@ -8,6 +8,8 @@ Full context lives in four planning docs in this repo's `docs/` folder — read 
 - `Agent-Factory-MVP-Scope.docx` — what ships first, definition of done
 - `Agent-Factory-Blueprint.docx` — how it's architected: spec schema, registry contract, Milestone 1 scope
 
+@AGENTS.md
+
 ## Current focus
 
 Live task tracker: `MVP-ROADMAP.md`. Check items off there as they're done — it's the source of truth for what's next, ahead of anything stated here.

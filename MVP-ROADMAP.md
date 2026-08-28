@@ -8,12 +8,12 @@ Check items off as we go. Re-order or split a milestone if reality disagrees wit
 
 ## Setup — project scaffolding
 
-- [ ] Initialize Next.js (App Router, TypeScript) in the repo
-- [ ] Create the Supabase project; enable the `pgvector` extension
-- [ ] Wire the Supabase client (`lib/db`) + environment variables (`.env.local`, gitignored)
-- [ ] Wire the Claude API client wrapper (`lib/llm`)
-- [ ] Add zod as the validation layer
-- [ ] Confirm `npm run dev` runs a blank app locally
+- [x] Initialize Next.js (App Router, TypeScript) in the repo
+- [ ] Create the Supabase project; enable the `pgvector` extension — blocked on you (supabase.com)
+- [ ] Wire the Supabase client (`lib/db`) + environment variables (`.env.local`, gitignored) — client code is written, waiting on real project credentials to actually test the connection
+- [x] Wire the Claude API client wrapper (`lib/llm`)
+- [x] Add zod as the validation layer
+- [x] Confirm `npm run dev` runs a blank app locally
 
 ## Milestone 1 — Spec schema + Intake (Blueprint §07)
 
