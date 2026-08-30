@@ -14,6 +14,8 @@ import {
   type IntakeExtraction,
 } from "@/lib/pipeline/types";
 
+export const maxDuration = 60;
+
 const RequestBodySchema = z.object({
   agent_type: z.string().min(1),
   request: z.string().min(1),

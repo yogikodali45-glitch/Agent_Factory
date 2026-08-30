@@ -6,6 +6,8 @@ import { getUser } from "@/lib/auth/getUser";
 import { SpecSchema } from "@/lib/pipeline/types";
 import { extractSource, chunkText } from "@/lib/pipeline/ingest";
 
+export const maxDuration = 60;
+
 const RequestBodySchema = z.object({
   agent_id: z.string().uuid(),
 });

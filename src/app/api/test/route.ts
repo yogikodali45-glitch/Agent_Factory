@@ -8,6 +8,11 @@ import { SpecSchema } from "@/lib/pipeline/types";
 import { buildAndPersist, type BuildFeedback } from "@/lib/pipeline/build";
 import { runTestChecks, type CheckResult } from "@/lib/pipeline/test-runner";
 
+// Up to 3 Build+Test cycles, each doing several LLM calls -- measured
+// ~15s for Test alone locally, with no serverless timeout to hit. Vercel
+// clamps this to whatever the plan actually allows if 60 is too high.
+export const maxDuration = 60;
+
 const RequestBodySchema = z.object({
   agent_id: z.string().uuid(),
 });

@@ -6,6 +6,8 @@ import { getAdapter } from "@/lib/pipeline/registry";
 import "@/lib/pipeline/adapters";
 import { SpecSchema } from "@/lib/pipeline/types";
 
+export const maxDuration = 60;
+
 const RequestBodySchema = z.object({
   agent_id: z.string().uuid(),
 });

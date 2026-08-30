@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/db/client";
 import { SpecSchema } from "@/lib/pipeline/types";
 import { runAgentTurn } from "@/lib/pipeline/agent";
 
+export const maxDuration = 30;
+
 // This endpoint is meant to be called from whatever site embeds the
 // widget -- an arbitrary external origin, not just this app. Open CORS
 // is correct here, not an oversight: the widget is public by design.
