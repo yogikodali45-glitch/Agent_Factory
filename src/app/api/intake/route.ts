@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { euri, DEFAULT_MODEL } from "@/lib/llm/client";
 import { createAdminClient } from "@/lib/db/client";
-import { getUser } from "@/lib/auth/getUser";
+import { getUserOrAnonymous } from "@/lib/auth/getUser";
 import { getAdapter } from "@/lib/pipeline/registry";
 import "@/lib/pipeline/adapters";
 import { CONNECTOR_LIBRARY } from "@/lib/pipeline/connectors";
@@ -108,10 +108,7 @@ async function extractSpec(
 }
 
 export async function POST(req: NextRequest) {
-  const user = await getUser(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const user = await getUserOrAnonymous(req);
 
   let json: unknown;
   try {

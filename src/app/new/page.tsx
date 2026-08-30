@@ -4,27 +4,31 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/useAuth";
-import { AuthHeader } from "@/components/AuthHeader";
 
 type ViewState =
   | { step: "form" }
   | { step: "clarifying"; questions: string[]; answers: string[] }
   | { step: "error"; message: string };
 
+// Sign-in is temporarily bypassed for early testing -- see page.tsx for
+// why. accessToken is attached when a real session happens to exist,
+// otherwise the request goes through as the shared anonymous account.
 export default function NewAgent() {
-  const { user, accessToken, loading, signOut } = useAuth();
+  const { accessToken, loading } = useAuth();
   const router = useRouter();
   const [requestText, setRequestText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [view, setView] = useState<ViewState>({ step: "form" });
 
   async function submitIntake(body: Record<string, unknown>) {
-    if (!accessToken) return;
     setSubmitting(true);
     try {
       const res = await fetch("/api/intake", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify(body),
       });
       const data = await res.json();
@@ -69,23 +73,13 @@ export default function NewAgent() {
   if (loading) {
     return <div className="min-h-screen bg-zinc-50 dark:bg-black" />;
   }
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-zinc-50 px-6 py-16 dark:bg-black">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          <Link href="/" className="underline">
-            Sign in
-          </Link>{" "}
-          to create an agent.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-zinc-50 px-6 py-16 dark:bg-black">
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-8">
-        <AuthHeader user={user} onSignOut={signOut} />
+        <Link href="/" className="text-sm text-zinc-500 underline">
+          ← Your agents
+        </Link>
         <div>
           <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">Describe your agent</h1>
           <p className="mt-1 text-zinc-600 dark:text-zinc-400">

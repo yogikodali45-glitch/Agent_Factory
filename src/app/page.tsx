@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/useAuth";
-import { AuthHeader } from "@/components/AuthHeader";
 
 interface AgentSummary {
   id: string;
@@ -12,69 +11,36 @@ interface AgentSummary {
   created_at: string;
 }
 
+// Sign-in is temporarily bypassed for early testing (Supabase's
+// free-tier email rate limit made magic-link sign-in a real point of
+// friction). Backend routes fall back to one shared anonymous account
+// (src/lib/auth/getUserOrAnonymous) instead of rejecting unauthenticated
+// requests. useAuth/signInWithEmail still work if a real session exists
+// -- accessToken just gets attached when present -- but nothing in this
+// page requires one anymore.
 export default function Home() {
-  const { user, accessToken, loading, signInWithEmail, signOut } = useAuth();
-  const [email, setEmail] = useState("");
-  const [linkSent, setLinkSent] = useState(false);
-  const [signInError, setSignInError] = useState<string | null>(null);
+  const { accessToken, loading } = useAuth();
   const [agents, setAgents] = useState<AgentSummary[] | null>(null);
 
   useEffect(() => {
-    if (!accessToken) return;
-    fetch("/api/agents", { headers: { Authorization: `Bearer ${accessToken}` } })
+    if (loading) return;
+    fetch("/api/agents", {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    })
       .then((res) => res.json())
       .then((data) => setAgents(data.agents ?? []));
-  }, [accessToken]);
-
-  async function handleSignIn(e: React.FormEvent) {
-    e.preventDefault();
-    setSignInError(null);
-    const { error } = await signInWithEmail(email);
-    if (error) setSignInError(error.message);
-    else setLinkSent(true);
-  }
+  }, [accessToken, loading]);
 
   if (loading) {
     return <div className="min-h-screen bg-zinc-50 dark:bg-black" />;
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-zinc-50 px-6 py-16 dark:bg-black">
-        <main className="mx-auto flex w-full max-w-sm flex-col gap-6">
-          <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">Agent Factory</h1>
-          {linkSent ? (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Check your email for a sign-in link.
-            </p>
-          ) : (
-            <form onSubmit={handleSignIn} className="flex flex-col gap-3">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@business.com"
-                className="rounded-md border border-zinc-300 bg-white p-2.5 text-sm text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-              />
-              <button
-                type="submit"
-                className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white dark:bg-white dark:text-black"
-              >
-                Send sign-in link
-              </button>
-              {signInError && <p className="text-sm text-red-600">{signInError}</p>}
-            </form>
-          )}
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-zinc-50 px-6 py-16 dark:bg-black">
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-8">
-        <AuthHeader user={user} onSignOut={signOut} />
+        <div>
+          <h1 className="text-sm font-semibold text-black dark:text-zinc-50">Agent Factory</h1>
+        </div>
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-black dark:text-zinc-50">Your agents</h1>
           <Link

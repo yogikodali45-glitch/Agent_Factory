@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db/client";
-import { getUser } from "@/lib/auth/getUser";
+import { getUserOrAnonymous } from "@/lib/auth/getUser";
 import "@/lib/pipeline/adapters";
 import { SpecSchema } from "@/lib/pipeline/types";
 import { buildAndPersist } from "@/lib/pipeline/build";
@@ -13,10 +13,7 @@ const RequestBodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const user = await getUser(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const user = await getUserOrAnonymous(req);
 
   let json: unknown;
   try {

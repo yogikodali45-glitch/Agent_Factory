@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db/client";
-import { getUser } from "@/lib/auth/getUser";
+import { getUserOrAnonymous } from "@/lib/auth/getUser";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getUser(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const user = await getUserOrAnonymous(req);
 
   const { id } = await params;
   const supabase = createAdminClient();

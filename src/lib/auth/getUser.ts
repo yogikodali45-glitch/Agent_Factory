@@ -26,3 +26,21 @@ export async function getUser(req: NextRequest): Promise<AuthedUser | null> {
   if (error || !data.user) return null;
   return { id: data.user.id, email: data.user.email };
 }
+
+// TEMPORARY, testing-phase only: falls back to one shared anonymous
+// account instead of 401ing, so early testers can use the app without
+// hitting Supabase's free-tier email-send rate limit or dealing with
+// magic-link redirect config. Everyone who isn't signed in shares this
+// one account's agents. This is a deliberate, requested bypass of the
+// real gate above (getUser), not a replacement for it -- when real user
+// accounts matter again, switch routes back to getUser + a 401 on null,
+// same as this function's own fallback-less shape. Don't build further
+// features on top of "anonymous" being permanent.
+const ANONYMOUS_USER: AuthedUser = {
+  id: "fc5a8a9d-040c-4db7-8544-8c6dd3cb047b",
+  email: "anonymous-testing@agentfactory.local",
+};
+
+export async function getUserOrAnonymous(req: NextRequest): Promise<AuthedUser> {
+  return (await getUser(req)) ?? ANONYMOUS_USER;
+}

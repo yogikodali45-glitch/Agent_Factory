@@ -3,7 +3,6 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/useAuth";
-import { AuthHeader } from "@/components/AuthHeader";
 
 interface CheckResult {
   check_type: "success_criteria" | "baseline_adversarial";
@@ -36,9 +35,12 @@ const AUTO_CHAIN: Record<string, { url: string; label: string }> = {
   tested: { url: "/api/deploy", label: "Getting ready to try..." },
 };
 
+// Sign-in is temporarily bypassed for early testing -- see page.tsx for
+// why. accessToken is attached when a real session happens to exist,
+// otherwise every call goes through as the shared anonymous account.
 export default function AgentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { user, accessToken, loading: authLoading, signOut } = useAuth();
+  const { accessToken, loading: authLoading } = useAuth();
   const [agent, setAgent] = useState<AgentDetail | null>(null);
   const [progressLabel, setProgressLabel] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -49,33 +51,35 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
   const [chatSending, setChatSending] = useState(false);
   const [promoting, setPromoting] = useState(false);
 
-  const fetchAgent = useCallback(
-    async (token: string): Promise<AgentDetail | null> => {
-      const res = await fetch(`/api/agents/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.error) {
-        setErrorMsg(data.error);
-        return null;
-      }
-      setAgent(data);
-      return data;
-    },
-    [id]
-  );
+  const fetchAgent = useCallback(async (): Promise<AgentDetail | null> => {
+    const res = await fetch(`/api/agents/${id}`, {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    });
+    const data = await res.json();
+    if (data.error) {
+      setErrorMsg(data.error);
+      return null;
+    }
+    setAgent(data);
+    return data;
+  }, [id, accessToken]);
 
   useEffect(() => {
-    if (!accessToken || startedRef.current) return;
+    if (authLoading || startedRef.current) return;
     startedRef.current = true;
     let cancelled = false;
 
     (async () => {
-      let current = await fetchAgent(accessToken);
+      let current = await fetchAgent();
       while (!cancelled && current && AUTO_CHAIN[current.status]) {
         const stage = AUTO_CHAIN[current.status];
         setProgressLabel(stage.label);
         const res = await fetch(stage.url, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+          headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
           body: JSON.stringify({ agent_id: id }),
         });
         const data = await res.json();
@@ -85,7 +89,7 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
           return;
         }
         if (cancelled) return;
-        current = await fetchAgent(accessToken);
+        current = await fetchAgent();
       }
       if (!cancelled) setProgressLabel(null);
     })();
@@ -93,7 +97,7 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
     return () => {
       cancelled = true;
     };
-  }, [accessToken, id, fetchAgent]);
+  }, [authLoading, id, fetchAgent, accessToken]);
 
   async function sendChat(e: React.FormEvent) {
     e.preventDefault();
@@ -117,33 +121,23 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
   }
 
   async function goLive() {
-    if (!accessToken) return;
     setPromoting(true);
     try {
       await fetch("/api/deploy/promote", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({ agent_id: id }),
       });
-      await fetchAgent(accessToken);
+      await fetchAgent();
     } finally {
       setPromoting(false);
     }
   }
 
   if (authLoading) return <div className="min-h-screen bg-zinc-50 dark:bg-black" />;
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-zinc-50 px-6 py-16 dark:bg-black">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          <Link href="/" className="underline">
-            Sign in
-          </Link>{" "}
-          to view this agent.
-        </p>
-      </div>
-    );
-  }
 
   const canTry = agent && (agent.status === "ready_to_try" || agent.status === "deployed");
   const embedSnippet = canTry
@@ -153,7 +147,6 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
   return (
     <div className="min-h-screen bg-zinc-50 px-6 py-16 dark:bg-black">
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-8">
-        <AuthHeader user={user} onSignOut={signOut} />
         <Link href="/" className="text-sm text-zinc-500 underline">
           ← Your agents
         </Link>

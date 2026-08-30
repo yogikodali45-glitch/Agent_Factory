@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { euri, EMBEDDING_MODEL } from "@/lib/llm/client";
 import { createAdminClient } from "@/lib/db/client";
-import { getUser } from "@/lib/auth/getUser";
+import { getUserOrAnonymous } from "@/lib/auth/getUser";
 import { SpecSchema } from "@/lib/pipeline/types";
 import { extractSource, chunkText } from "@/lib/pipeline/ingest";
 
@@ -18,10 +18,7 @@ interface PendingChunk {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await getUser(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const user = await getUserOrAnonymous(req);
 
   let json: unknown;
   try {
