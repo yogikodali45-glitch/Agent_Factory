@@ -102,12 +102,22 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // This route is generic across every agent type -- it must not assume
+  // every type gets a chat_endpoint/embed_snippet. Only include them when
+  // the type's own declared channels actually call for them (MVP DoD #5:
+  // none of Intake/Build/Assemble/Test/Deploy hardcode "chat"). A future
+  // voice type with channels: ["phone"] would get neither field here.
   const origin = req.nextUrl.origin;
+  const channelUrls: Record<string, unknown> = {};
+  if (adapter.deploy.channels.includes("chat_widget")) {
+    channelUrls.chat_endpoint = `${origin}/api/chat/${spec.agent_id}`;
+    channelUrls.embed_snippet = `<script src="${origin}/api/widget/${spec.agent_id}" async></script>`;
+  }
+
   return NextResponse.json({
     agent_id: spec.agent_id,
     status: agentRow.status === "deployed" ? "deployed" : "ready_to_try",
     channels: adapter.deploy.channels,
-    chat_endpoint: `${origin}/api/chat/${spec.agent_id}`,
-    embed_snippet: `<script src="${origin}/api/widget/${spec.agent_id}" async></script>`,
+    ...channelUrls,
   });
 }

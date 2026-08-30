@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/db/client";
 import { getUser } from "@/lib/auth/getUser";
 import { getAdapter } from "@/lib/pipeline/registry";
 import "@/lib/pipeline/adapters";
+import { CONNECTOR_LIBRARY } from "@/lib/pipeline/connectors";
 import {
   IntakeExtractionSchema,
   SpecSchema,
@@ -23,7 +24,14 @@ const RequestBodySchema = z.object({
 type RequestBody = z.infer<typeof RequestBodySchema>;
 
 function systemPrompt(adapterGuidance: string): string {
+  const toolList = CONNECTOR_LIBRARY.map((c) => `- ${c.label}: ${c.description}`).join("\n");
+
   return `You are the Intake stage of Agent Factory, a platform that turns a business's plain-language request into a structured, testable spec for an AI agent. You do not build or deploy anything -- you only extract and validate the spec.
+
+The platform can ONLY give the built agent these capabilities -- nothing else exists yet, no matter what the request asks for:
+${toolList}
+
+If part of the request needs a capability that isn't in that list (a live system lookup like real-time inventory or current pricing, placing an actual order, anything requiring a real integration this platform doesn't have), do not write an objective or success_criterion that assumes the agent can do it -- the built agent would have no way to ever satisfy it. Instead, fold it into escalation_rules or constraints as something the agent hands off or declines, so the Spec only ever promises what can actually be built.
 
 ${adapterGuidance}
 

@@ -18,7 +18,7 @@ const ScenariosSchema = z.object({ scenarios: z.array(z.string().min(1)) });
 async function generateScenarios(spec: Spec, criteria: string[]): Promise<string[] | null> {
   if (criteria.length === 0) return [];
   const result = await jsonCall(
-    `You write realistic test messages a customer might send to a chat agent, to test whether the agent meets specific success criteria. For EACH criterion given, write ONE realistic customer message that would exercise it -- something a real customer would plausibly type, not a restatement of the criterion. Respond with ONLY: {"scenarios":["message 1","message 2",...]}, same order and count as the criteria given.`,
+    `You write realistic test messages a customer might send an agent, to test whether it meets specific success criteria. For EACH criterion given, write ONE realistic customer message that would exercise it -- something a real customer would plausibly say, not a restatement of the criterion. Respond with ONLY: {"scenarios":["message 1","message 2",...]}, same order and count as the criteria given.`,
     `Agent objectives: ${JSON.stringify(spec.objectives)}\nKnowledge sources: ${JSON.stringify(
       spec.knowledge_sources.map((k) => k.label || k.value)
     )}\n\nCriteria:\n${criteria.map((c, i) => `${i + 1}. ${c}`).join("\n")}`,
