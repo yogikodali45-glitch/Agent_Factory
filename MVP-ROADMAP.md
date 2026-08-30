@@ -87,10 +87,12 @@ Verified with two real test users (created via the admin API, magic-link session
 
 ## Milestone 7 — MVP validation & launch
 
-- [ ] Full pipeline run end-to-end on real (non-fixture) requests
-- [ ] Build lands within the target time window
-- [ ] Zero hardcoded `"chat"` branching anywhere in the pipeline — audit pass
-- [ ] All 5 items of MVP §03 Definition of Done verified
-- [ ] Agent Factory app deployed to Vercel; Supabase production project + secrets configured
-- [ ] Production smoke test
-- [ ] MVP complete → signal to move to Phase 1 (voice), per MVP §05
+- [x] Full pipeline run end-to-end on real (non-fixture) requests — deliberately messier, more varied phrasing than any prior test case, run both locally and against production
+- [x] Build lands within the target time window — measured ~20-35s, Intake through a tryable agent, across multiple real runs (local and production). BRD §04 left this as an explicit TBD pending real measurement; now has real numbers.
+- [x] Zero hardcoded `"chat"` branching anywhere in the pipeline — audit pass. Found and fixed 2 real violations: `/api/deploy` unconditionally returned chat-shaped fields regardless of the type's declared channels; `test-runner.ts`'s scenario prompt said "chat agent" explicitly. Confirmed via grep afterward: zero literal `agent_type`/`"chat"` conditionals anywhere.
+- [x] All 5 items of MVP §03 Definition of Done verified — the real test run also surfaced and fixed a genuine gap: Intake could turn an objective with no real backing capability (e.g. live inventory lookup — not in MVP's connector library at all) into a success_criterion nothing could ever satisfy. Fixed by giving Intake visibility into the actual connector library so it converts out-of-scope asks into honest escalation rules instead.
+- [x] Agent Factory app deployed to Vercel; Supabase production project + secrets configured — same Supabase project as dev (no separate staging split, consistent with this build's approach throughout); live at https://agent-factory-tan.vercel.app
+- [x] Production smoke test — full pipeline run against the live URL: Intake→Build→Assemble→Test (7/7 passed, 2 attempts)→Deploy→live chat (correct CORS, correct contextual reply)→widget script (correctly scoped to the right agent)→promote to live, ~31s total. Also caught a real issue this way: Test took 16.7s in production, which would have failed under Vercel's old 10s default timeout — added explicit `maxDuration` to every pipeline route ahead of finding out the hard way in front of a real user.
+- [x] MVP complete → signal to move to Phase 1 (voice), per MVP §05 — **all 7 Milestones done. MVP is complete.**
+
+Worth knowing: two production test runs on the deliberately ambiguous/edge-case request landed in `needs_review` after 3 honest attempts — confirmed via transcript inspection this was genuine LLM grading inconsistency on a hard, ambiguous criterion (the free-tier model's real limit), not a technical failure. Every call completed correctly with no errors or timeouts either time. This is the Test/retry mechanism working as intended, not a defect — see BRD §07's own risk framing ("the test layer catching failures before an agent ever ships").
