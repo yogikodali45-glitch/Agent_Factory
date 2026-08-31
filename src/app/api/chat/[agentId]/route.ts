@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/db/client";
 import { SpecSchema } from "@/lib/pipeline/types";
-import { runAgentTurn } from "@/lib/pipeline/agent";
+import { runAgentTurn, type AgentTurnResult } from "@/lib/pipeline/agent";
 
 export const maxDuration = 30;
 
@@ -92,9 +92,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ age
     );
   }
 
-  let reply: string;
+  let turn: AgentTurnResult;
   try {
-    reply = await runAgentTurn({
+    turn = await runAgentTurn({
       agentId,
       spec,
       systemPrompt: buildRow.system_prompt,
@@ -109,5 +109,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ age
     );
   }
 
-  return NextResponse.json({ reply }, { headers: CORS_HEADERS });
+  // Feedback is secondary to the reply itself -- a failed insert here
+  // shouldn't turn into a 502 for a customer who already got their answer.
+  if (turn.feedback) {
+    const { error: feedbackError } = await supabase.from("agent_feedback").insert({
+      agent_id: agentId,
+      comment: turn.feedback.comment,
+      sentiment: turn.feedback.sentiment,
+    });
+    if (feedbackError) {
+      console.error(`Failed to persist agent_feedback for agent ${agentId}: ${feedbackError.message}`);
+    }
+  }
+
+  return NextResponse.json({ reply: turn.reply }, { headers: CORS_HEADERS });
 }

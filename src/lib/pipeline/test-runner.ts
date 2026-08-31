@@ -80,14 +80,15 @@ export async function runTestChecks(
     })),
   ];
 
-  const responses = await Promise.all(
+  const turns = await Promise.all(
     items.map((it) =>
       runAgentTurn({ agentId, spec, systemPrompt, selectedTools, userMessage: it.test_input })
     )
   );
+  const replies = turns.map((t) => t.reply);
 
   const grades = await gradeResponses(
-    items.map((it, i) => ({ criterion: it.description, input: it.test_input, response: responses[i] }))
+    items.map((it, i) => ({ criterion: it.description, input: it.test_input, response: replies[i] }))
   );
   if (!grades) return null;
 
@@ -95,7 +96,7 @@ export async function runTestChecks(
     check_type: it.check_type,
     description: it.description,
     test_input: it.test_input,
-    agent_response: responses[i],
+    agent_response: replies[i],
     passed: grades[i].passed,
     reasoning: grades[i].reasoning,
   }));

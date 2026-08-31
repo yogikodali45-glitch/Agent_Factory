@@ -96,3 +96,20 @@ Verified with two real test users (created via the admin API, magic-link session
 - [x] MVP complete → signal to move to Phase 1 (voice), per MVP §05 — **all 7 Milestones done. MVP is complete.**
 
 Worth knowing: two production test runs on the deliberately ambiguous/edge-case request landed in `needs_review` after 3 honest attempts — confirmed via transcript inspection this was genuine LLM grading inconsistency on a hard, ambiguous criterion (the free-tier model's real limit), not a technical failure. Every call completed correctly with no errors or timeouts either time. This is the Test/retry mechanism working as intended, not a defect — see BRD §07's own risk framing ("the test layer catching failures before an agent ever ships").
+
+## Post-MVP
+
+MVP's Definition of Done is met; everything below is enhancement on top of a complete product, tracked here rather than as renumbered milestones since MVP §03/§05 don't cover it.
+
+### `feedback_collection` connector
+
+- [x] Add `feedback_collection` to `CONNECTOR_LIBRARY` (`lib/pipeline/connectors.ts`)
+- [x] Allow it in the chat `BuildAdapter`, with guidance so Build only selects it when the requester actually asked for feedback/reviews/ratings — not included by default the way `escalate_to_human` is
+- [x] `agent_feedback` table (migration `0007_agent_feedback.sql`) — `agent_id` FK cascade-deletes with its agent, RLS + owner-scoped policy matching every other table
+- [x] `runAgentTurn` extended to conditionally return `{reply, feedback}` — plain-text call unchanged for every agent without the connector; agents with it switch to `response_format: json_object` to get a structured `{comment, sentiment}` out when the customer's message actually contains an opinion, `null` otherwise
+- [x] `/api/chat/[agentId]` persists non-null feedback to `agent_feedback`, still returns only `{reply}` to the client — no change to the widget's contract
+- [x] `test-runner.ts` updated for the new return shape (`.reply` used for grading and `agent_response`; feedback isn't graded)
+
+Verified live end to end against the local dev server (same Supabase project as production): a plumber-agent request that explicitly asked for booking + feedback correctly selected `booking`, `feedback_collection`, and `escalate_to_human`; passed Test (3 attempts, using the JSON-mode path for every check); deployed; a real feedback-shaped chat message persisted exactly one row with a sensible `comment`/`sentiment`; a follow-up booking message in the same conversation did not create a second row; the public chat response shape stayed exactly `{reply}` throughout. Regression check: a plain bakery FAQ agent that never mentioned feedback did not select the connector, and a direct isolated check of the plain (non-JSON) chat path confirmed it still returns a normal reply with the same unchanged response shape. Test data cleaned up after.
+
+A broader roadmap conversation also covered a business-facing dashboard (bookings/feedback/customer interactions in one place) and whether many agents per business needs a "package" abstraction — the latter was resolved (no, the registry/connector pattern already handles it; see `CLAUDE.md`'s Current Focus). Neither the dashboard nor Phase 1 voice has a decided priority or any code yet — see `CLAUDE.md`'s Open Questions.

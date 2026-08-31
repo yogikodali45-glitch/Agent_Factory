@@ -12,7 +12,11 @@ Full context lives in four planning docs in this repo's `docs/` folder — read 
 
 ## Current focus
 
-**The MVP is complete — all 7 Milestones done.** Live task tracker: `MVP-ROADMAP.md`, kept as the historical record of how it got built. Per MVP §05, this is the signal to move to Phase 1 (voice) — the registry pattern is now proven against production, not just theory, so a second agent type should genuinely be "write one adapter," not a redesign. Nothing in this repo currently targets Phase 1 work; check with the user before starting any of it.
+**The MVP shipped (all 7 Milestones done), and the first post-MVP enhancement is live.** Live task tracker: `MVP-ROADMAP.md`, kept as the historical record of how it got built, now with a post-MVP section too. Per MVP §05, MVP completion was the signal to consider Phase 1 (voice) — the registry pattern is proven against production, not just theory, so a second agent type should genuinely be "write one adapter," not a redesign. Nothing in this repo targets Phase 1 (voice) yet; check with the user before starting any of it.
+
+First post-MVP addition: the **`feedback_collection`** connector. A chat agent can now ask a customer how their interaction went and persist a structured `{comment, sentiment}` pair to the new `agent_feedback` table — unlike `booking`/`escalate_to_human`, which stay purely conversational (no real backend to call), feedback that isn't recorded anywhere isn't actually feedback. Build only selects it when the requester explicitly asks for feedback/reviews/ratings — it is not included by default the way `escalate_to_human` is. See the `runAgentTurn` paragraph below for how it works.
+
+A broader product-direction conversation happened alongside this. One question it raised was resolved without a rearchitecture: whether a business owner creating many agents (e.g. a plumber wanting booking, feedback, and dispatch agents) needs a fixed "package" of prebuilt agents instead of per-business generation. It doesn't — the registry/connector pattern already handles this at the code level (one pipeline, data-driven per business); the real lever for consistency across agents is tightening Build's prompt templates, not a new abstraction. The other question it raised — a business-facing dashboard surfacing bookings/feedback/customer interactions — is unbuilt and unscheduled; see Open Questions.
 
 Deployed and live at **https://agent-factory-tan.vercel.app** (Vercel, GitHub-linked — pushes to `main` auto-deploy). Same Supabase project backs both local dev and production; there is no separate staging database. Don't assume one exists.
 
@@ -20,9 +24,9 @@ Auth is Bearer-token based, not cookie/SSR sessions — the browser attaches its
 
 **Sign-in is temporarily bypassed (added right after Milestone 7 shipped, during early hands-on testing -- check MVP-ROADMAP.md / git log if you need to know how long this has been true).** Supabase's free-tier magic-link email rate limit made real sign-in a genuine blocker for that testing, so every pipeline route (`intake`/`build`/`assemble`/`test`/`deploy`/`deploy/promote`, plus `agents`/`agents/[id]`) now calls `getUserOrAnonymous` instead of `getUser` + a 401 -- an unauthenticated request falls back to one shared anonymous account (`ANONYMOUS_USER` in `src/lib/auth/getUser.ts`) rather than being rejected. The frontend no longer gates any page on being signed in either. `getUser` itself, `useAuth`, and the magic-link sign-in flow are all still intact and correct, just unused by default -- reverting is: swap `getUserOrAnonymous` back to `getUser` + 401 in those 8 routes, and re-add the `if (!user)` gates in `page.tsx`/`new/page.tsx`/`agents/[id]/page.tsx` (git history has the exact prior versions). Don't build real multi-tenant features (billing, sharing, anything assuming distinct owners matter) on top of the anonymous state -- it's one shared bucket right now, not real per-user data.
 
-`owner_id` checks in code, not RLS, are what actually protect data on the routes that DO get a real session — every route uses the service-role client (`createAdminClient`, `src/lib/db/client.ts`) which bypasses RLS by design. RLS is enabled on all 6 tables as real defense-in-depth, verified with a raw anon-key query, but don't mistake it for the primary gate, and don't mistake the current anonymous bypass for RLS being broken -- RLS was never what the anonymous path relies on either way. `chat/[agentId]` and `widget/[agentId]` are deliberately the only routes with no auth concept at all — they're for end-customers on the business's own site, not the requester, and that was true before this bypass too.
+`owner_id` checks in code, not RLS, are what actually protect data on the routes that DO get a real session — every route uses the service-role client (`createAdminClient`, `src/lib/db/client.ts`) which bypasses RLS by design. RLS is enabled on all 7 tables as real defense-in-depth, verified with a raw anon-key query, but don't mistake it for the primary gate, and don't mistake the current anonymous bypass for RLS being broken -- RLS was never what the anonymous path relies on either way. `chat/[agentId]` and `widget/[agentId]` are deliberately the only routes with no auth concept at all — they're for end-customers on the business's own site, not the requester, and that was true before this bypass too.
 
-`runAgentTurn` (`src/lib/pipeline/agent.ts`) is the "invoke the built agent" primitive — system prompt + retrieved knowledge (`searchKnowledge`) + a user message → a reply. Both `/api/chat/[agentId]` and Test's grading depend on it — it's the one place that actually talks to a built agent.
+`runAgentTurn` (`src/lib/pipeline/agent.ts`) is the "invoke the built agent" primitive — system prompt + retrieved knowledge (`searchKnowledge`) + a user message → `{reply, feedback}`. Both `/api/chat/[agentId]` and Test's grading depend on it — it's the one place that actually talks to a built agent. `feedback` is null for every agent except one whose `selected_tools` includes `feedback_collection` — for those, the call switches to `response_format: json_object` (the same "must contain the word json" requirement `jsonCall.ts` centrally handles for its own callers; duplicated here by hand because this call carries conversation history and `jsonCall` doesn't accept one) and asks for `{"reply": "...", "feedback": {"comment": "...", "sentiment": "positive"|"neutral"|"negative"} | null}`, with `feedback` set only when the customer's latest message actually expresses an opinion about their experience. `/api/chat/[agentId]` persists non-null `feedback` to `agent_feedback` and still returns only `{reply}` to the actual client — the widget script never sees the feedback field. A failed feedback insert is logged (`console.error`) but doesn't fail the request; the customer already has their answer by then. Test's grading and `CheckResult.agent_response` both use `.reply` only — feedback isn't graded.
 
 Build's retry feedback (`BuildFeedback[]`) accumulates every criterion that's failed at ANY point across attempts, not just the most recent failure — passing only the latest failure let a rebuild fix it by silently regressing something that was already passing. Keep it that way; don't simplify it back down without re-checking against a real multi-attempt case.
 
@@ -70,7 +74,7 @@ What's actually there, not a plan:
     /pipeline/agent.ts        runAgentTurn -- the "invoke a built agent" primitive
     /pipeline/retrieval.ts    searchKnowledge (pgvector via the match_knowledge_chunks RPC)
     /pipeline/test-runner.ts  scenario generation + grading
-    /pipeline/connectors.ts   the v0 tool library (faq_lookup, booking, escalate_to_human)
+    /pipeline/connectors.ts   the v0 tool library (faq_lookup, booking, escalate_to_human, feedback_collection)
     /pipeline/ingest.ts       url/document extraction + chunking
     /pipeline/baseline-checks.ts
     /db/client.ts          createAdminClient -- service-role, bypasses RLS, used by every route
@@ -78,7 +82,7 @@ What's actually there, not a plan:
     /llm/client.ts         Euri gateway wrapper + jsonCall.ts (shared call+parse+retry helper)
     /auth/getUser.ts       Bearer-token session validation
     /auth/useAuth.ts       browser session hook
-/supabase/migrations    0001-0006, applied in order
+/supabase/migrations    0001-0007, applied in order
 /docs                    the 4 planning docs
 ```
 
@@ -98,3 +102,4 @@ What's actually there, not a plan:
 - Connector library priority order (PRD §07)
 - Spec schema field-level validation rules, how `needs_review` reaches a human (Blueprint §08) -- hosting itself is resolved (Vercel), this is about the human-review workflow specifically, which still doesn't exist anywhere in the app
 - Auth is magic-link only for now -- if that ever needs to change (password, OAuth), reconsider the Bearer-token pattern too, not just the sign-in UI
+- What ships next after `feedback_collection` -- a business-facing dashboard (bookings, feedback, customer interactions in one place) vs. Phase 1 voice vs. something else -- both were discussed but no priority between them was decided; don't start either without checking
