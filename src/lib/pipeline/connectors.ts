@@ -21,7 +21,7 @@ export const CONNECTOR_LIBRARY: Connector[] = [
     id: "booking",
     label: "Booking",
     description:
-      "Schedules or books an appointment, reservation, class, or order on the customer's behalf.",
+      "Records a booking/appointment/reservation request from the customer -- name, contact, requested time, and details -- for the business to confirm. There's no live calendar behind this; it cannot check real availability or guarantee a slot, only capture the request.",
   },
   {
     id: "escalate_to_human",
@@ -33,7 +33,7 @@ export const CONNECTOR_LIBRARY: Connector[] = [
     id: "feedback_collection",
     label: "Feedback collection",
     description:
-      "Asks the customer how their interaction went and captures what they say -- unlike booking/escalation, this one actually persists structured data (src/lib/pipeline/agent.ts), not just conversational behavior, since feedback nobody records isn't feedback.",
+      "Asks the customer how their interaction went and captures what they say as structured feedback the business can review.",
   },
 ];
 
