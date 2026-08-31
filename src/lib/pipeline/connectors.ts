@@ -29,6 +29,12 @@ export const CONNECTOR_LIBRARY: Connector[] = [
     description:
       "Hands the conversation off to a human -- for the Spec's own escalation_rules, and as a baseline safety behavior regardless of what the Spec says.",
   },
+  {
+    id: "feedback_collection",
+    label: "Feedback collection",
+    description:
+      "Asks the customer how their interaction went and captures what they say -- unlike booking/escalation, this one actually persists structured data (src/lib/pipeline/agent.ts), not just conversational behavior, since feedback nobody records isn't feedback.",
+  },
 ];
 
 export function connectorById(id: string): Connector | undefined {
