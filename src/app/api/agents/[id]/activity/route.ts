@@ -31,17 +31,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const [bookings, feedback, escalations] = await Promise.all([
     supabase
       .from("agent_bookings")
-      .select("id, customer_name, customer_contact, requested_time, details, created_at")
+      .select("id, customer_name, customer_contact, requested_time, details, channel, created_at")
       .eq("agent_id", id)
       .order("created_at", { ascending: false }),
     supabase
       .from("agent_feedback")
-      .select("id, comment, sentiment, created_at")
+      .select("id, comment, sentiment, channel, created_at")
       .eq("agent_id", id)
       .order("created_at", { ascending: false }),
     supabase
       .from("agent_escalations")
-      .select("id, reason, customer_contact, created_at")
+      .select("id, reason, customer_contact, channel, created_at")
       .eq("agent_id", id)
       .order("created_at", { ascending: false }),
   ]);
