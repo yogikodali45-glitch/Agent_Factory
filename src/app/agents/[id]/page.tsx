@@ -23,6 +23,32 @@ interface AgentDetail {
   testChecks: CheckResult[];
 }
 
+interface Booking {
+  id: string;
+  customer_name: string | null;
+  customer_contact: string | null;
+  requested_time: string;
+  details: string;
+  created_at: string;
+}
+interface Feedback {
+  id: string;
+  comment: string;
+  sentiment: "positive" | "neutral" | "negative" | null;
+  created_at: string;
+}
+interface Escalation {
+  id: string;
+  reason: string;
+  customer_contact: string | null;
+  created_at: string;
+}
+interface Activity {
+  bookings: Booking[];
+  feedback: Feedback[];
+  escalations: Escalation[];
+}
+
 // The stage each status still needs run, and the human-facing label
 // while it's running. Nothing after Test requires a click -- Deploy's
 // provisioning step (getting to ready_to_try) is plumbing, same as
@@ -50,6 +76,21 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
   const [promoting, setPromoting] = useState(false);
+
+  const [activity, setActivity] = useState<Activity | null>(null);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const fetchActivity = useCallback(async () => {
+    setActivityLoading(true);
+    try {
+      const res = await fetch(`/api/agents/${id}/activity`, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
+      const data = await res.json();
+      if (!data.error) setActivity(data);
+    } finally {
+      setActivityLoading(false);
+    }
+  }, [id, accessToken]);
 
   const fetchAgent = useCallback(async (): Promise<AgentDetail | null> => {
     const res = await fetch(`/api/agents/${id}`, {
@@ -99,6 +140,17 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
     };
   }, [authLoading, id, fetchAgent, accessToken]);
 
+  const canTry = agent?.status === "ready_to_try" || agent?.status === "deployed";
+  useEffect(() => {
+    if (!canTry) return;
+    (async () => {
+      await fetchActivity();
+    })();
+    // Only re-run when it *becomes* tryable, not on every unrelated
+    // re-render -- fetchActivity itself is stable per accessToken/id.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canTry]);
+
   async function sendChat(e: React.FormEvent) {
     e.preventDefault();
     const text = chatInput.trim();
@@ -139,7 +191,6 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
 
   if (authLoading) return <div className="min-h-screen bg-zinc-50 dark:bg-black" />;
 
-  const canTry = agent && (agent.status === "ready_to_try" || agent.status === "deployed");
   const embedSnippet = canTry
     ? `<script src="${typeof window !== "undefined" ? window.location.origin : ""}/api/widget/${id}" async></script>`
     : null;
@@ -268,6 +319,112 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
                 <pre className="overflow-x-auto rounded-md border border-zinc-200 bg-white p-3 text-xs text-black dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50">
                   {embedSnippet}
                 </pre>
+              </div>
+            )}
+
+            {canTry && (
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-black dark:text-zinc-50">Customer activity</h2>
+                  <button
+                    onClick={fetchActivity}
+                    disabled={activityLoading}
+                    className="text-xs text-zinc-500 underline disabled:opacity-50"
+                  >
+                    {activityLoading ? "Refreshing..." : "Refresh"}
+                  </button>
+                </div>
+
+                {activity &&
+                activity.bookings.length === 0 &&
+                activity.feedback.length === 0 &&
+                activity.escalations.length === 0 ? (
+                  <p className="text-sm text-zinc-500">
+                    No customer activity yet — it&apos;ll show up here once people start chatting with your agent.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {activity && activity.escalations.length > 0 && (
+                      <div>
+                        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-red-700 dark:text-red-400">
+                          Needs a human ({activity.escalations.length})
+                        </h3>
+                        <ul className="flex flex-col gap-2">
+                          {activity.escalations.map((e) => (
+                            <li
+                              key={e.id}
+                              className="rounded-md border border-red-200 bg-red-50 p-3 text-sm dark:border-red-900 dark:bg-red-950"
+                            >
+                              <p className="text-black dark:text-zinc-50">{e.reason}</p>
+                              <p className="mt-1 text-xs text-zinc-500">
+                                {e.customer_contact ? `Contact: ${e.customer_contact} · ` : ""}
+                                {new Date(e.created_at).toLocaleString()}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {activity && activity.bookings.length > 0 && (
+                      <div>
+                        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                          Booking requests ({activity.bookings.length})
+                        </h3>
+                        <ul className="flex flex-col gap-2">
+                          {activity.bookings.map((b) => (
+                            <li
+                              key={b.id}
+                              className="rounded-md border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+                            >
+                              <p className="text-black dark:text-zinc-50">{b.details}</p>
+                              <p className="mt-1 text-xs text-zinc-500">
+                                Requested: {b.requested_time}
+                                {b.customer_name ? ` · ${b.customer_name}` : ""}
+                                {b.customer_contact ? ` · ${b.customer_contact}` : ""}
+                              </p>
+                              <p className="mt-1 text-xs text-zinc-400">{new Date(b.created_at).toLocaleString()}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {activity && activity.feedback.length > 0 && (
+                      <div>
+                        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                          Feedback ({activity.feedback.length})
+                        </h3>
+                        <ul className="flex flex-col gap-2">
+                          {activity.feedback.map((f) => (
+                            <li
+                              key={f.id}
+                              className="rounded-md border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="text-black dark:text-zinc-50">{f.comment}</span>
+                                {f.sentiment && (
+                                  <span
+                                    className={
+                                      f.sentiment === "positive"
+                                        ? "shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800 dark:bg-green-950 dark:text-green-300"
+                                        : f.sentiment === "negative"
+                                          ? "shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-800 dark:bg-red-950 dark:text-red-300"
+                                          : "shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                                    }
+                                  >
+                                    {f.sentiment.toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="mt-1 text-xs text-zinc-400">{new Date(f.created_at).toLocaleString()}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </>

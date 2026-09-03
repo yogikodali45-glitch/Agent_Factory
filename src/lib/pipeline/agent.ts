@@ -68,7 +68,7 @@ const STRUCTURED_CONNECTORS = [
     id: "booking",
     key: "booking",
     shape: `{"customer_name": "..." | null, "customer_contact": "..." | null, "requested_time": "...", "details": "..."}`,
-    instruction: `"booking": only when the customer's LATEST message is asking to schedule/book something -- capture whatever name, contact, requested time, and details they actually gave (use null for name/contact if they didn't give one). This only records a REQUEST for the business to confirm; you have no way to check real availability, so your "reply" must never claim the booking is confirmed -- say it's been noted/passed along, not that it's set.`,
+    instruction: `"booking": set this whenever the customer's LATEST message asks to schedule/book something AND gives at least a time and what it's for -- capture whatever name, contact, time, and details they've given SO FAR, using null for anything not given. Set it even if you plan to ask for more details (like an address) in your reply -- do NOT wait until every detail is gathered, since a partial booking logged now beats one lost because the conversation never continued. This only records a REQUEST for the business to confirm; you have no way to check real availability, so your "reply" must never claim the booking is confirmed -- say it's been noted/passed along, not that it's set.`,
     schema: z.object({
       customer_name: z.string().nullable().optional(),
       customer_contact: z.string().nullable().optional(),
