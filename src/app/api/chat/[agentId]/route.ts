@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/db/client";
 import { SpecSchema } from "@/lib/pipeline/types";
 import { runAgentTurn, type AgentTurnResult } from "@/lib/pipeline/agent";
+import { persistTurn } from "@/lib/pipeline/persist-turn";
 
 export const maxDuration = 30;
 
@@ -109,18 +110,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ age
     );
   }
 
-  // Each side-channel is secondary to the reply itself -- a failed insert
-  // here shouldn't turn into a 502 for a customer who already got their
-  // answer, so failures are logged, not thrown.
-  const persist = async (table: string, row: object) => {
-    const { error } = await supabase.from(table).insert({ agent_id: agentId, ...row });
-    if (error) console.error(`Failed to persist ${table} for agent ${agentId}: ${error.message}`);
-  };
-  await Promise.all([
-    turn.feedback && persist("agent_feedback", turn.feedback),
-    turn.booking && persist("agent_bookings", turn.booking),
-    turn.escalation && persist("agent_escalations", turn.escalation),
-  ]);
+  await persistTurn(supabase, agentId, "chat", turn);
 
   return NextResponse.json({ reply: turn.reply }, { headers: CORS_HEADERS });
 }

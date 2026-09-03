@@ -16,7 +16,7 @@ interface CheckResult {
 interface AgentDetail {
   id: string;
   status: string;
-  spec: { objectives: string[] };
+  spec: { agent_type: string; objectives: string[] };
   build: { system_prompt: string; selected_tools: string[] } | null;
   deploy: { channels: string[]; is_live: boolean } | null;
   latestTestRun: { attempt_number: number; passed: boolean } | null;
@@ -29,18 +29,21 @@ interface Booking {
   customer_contact: string | null;
   requested_time: string;
   details: string;
+  channel: string;
   created_at: string;
 }
 interface Feedback {
   id: string;
   comment: string;
   sentiment: "positive" | "neutral" | "negative" | null;
+  channel: string;
   created_at: string;
 }
 interface Escalation {
   id: string;
   reason: string;
   customer_contact: string | null;
+  channel: string;
   created_at: string;
 }
 interface Activity {
@@ -191,9 +194,13 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
 
   if (authLoading) return <div className="min-h-screen bg-zinc-50 dark:bg-black" />;
 
-  const embedSnippet = canTry
-    ? `<script src="${typeof window !== "undefined" ? window.location.origin : ""}/api/widget/${id}" async></script>`
-    : null;
+  const isChatWidget = agent?.deploy?.channels.includes("chat_widget") ?? false;
+  const isPhone = agent?.deploy?.channels.includes("phone") ?? false;
+
+  const embedSnippet =
+    canTry && isChatWidget
+      ? `<script src="${typeof window !== "undefined" ? window.location.origin : ""}/api/widget/${id}" async></script>`
+      : null;
 
   return (
     <div className="min-h-screen bg-zinc-50 px-6 py-16 dark:bg-black">
@@ -221,7 +228,9 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
               <h1 className="text-xl font-semibold text-black dark:text-zinc-50">
                 {agent.spec.objectives?.[0] || "Your agent"}
               </h1>
-              <p className="mt-1 text-xs uppercase tracking-wide text-zinc-500">{agent.status}</p>
+              <p className="mt-1 text-xs uppercase tracking-wide text-zinc-500">
+                {agent.spec.agent_type === "voice" ? "Voice agent" : "Chat agent"} · {agent.status}
+              </p>
             </div>
 
             {agent.status === "needs_review" && (
@@ -264,7 +273,7 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
               </div>
             )}
 
-            {canTry && (
+            {canTry && isChatWidget && (
               <div>
                 <h2 className="mb-2 text-sm font-semibold text-black dark:text-zinc-50">Try it yourself</h2>
                 <div className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
@@ -297,6 +306,29 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
                       Send
                     </button>
                   </form>
+                </div>
+              </div>
+            )}
+
+            {canTry && isPhone && (
+              <div>
+                <h2 className="mb-2 text-sm font-semibold text-black dark:text-zinc-50">Try a test call</h2>
+                <div className="rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                  {process.env.NEXT_PUBLIC_VOICE_TEST_NUMBER ? (
+                    <>
+                      <p className="text-lg font-semibold text-black dark:text-zinc-50">
+                        {process.env.NEXT_PUBLIC_VOICE_TEST_NUMBER}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Call this number to try your agent. This slice uses one shared test number, not a
+                        number provisioned per agent.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-zinc-500">
+                      No test number configured yet — set NEXT_PUBLIC_VOICE_TEST_NUMBER to enable this.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -356,9 +388,14 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
                               className="rounded-md border border-red-200 bg-red-50 p-3 text-sm dark:border-red-900 dark:bg-red-950"
                             >
                               <p className="text-black dark:text-zinc-50">{e.reason}</p>
-                              <p className="mt-1 text-xs text-zinc-500">
-                                {e.customer_contact ? `Contact: ${e.customer_contact} · ` : ""}
-                                {new Date(e.created_at).toLocaleString()}
+                              <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
+                                <span>
+                                  {e.customer_contact ? `Contact: ${e.customer_contact} · ` : ""}
+                                  {new Date(e.created_at).toLocaleString()}
+                                </span>
+                                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                                  {e.channel === "call" ? "Call" : "Chat"}
+                                </span>
                               </p>
                             </li>
                           ))}
@@ -383,7 +420,12 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
                                 {b.customer_name ? ` · ${b.customer_name}` : ""}
                                 {b.customer_contact ? ` · ${b.customer_contact}` : ""}
                               </p>
-                              <p className="mt-1 text-xs text-zinc-400">{new Date(b.created_at).toLocaleString()}</p>
+                              <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-400">
+                                <span>{new Date(b.created_at).toLocaleString()}</span>
+                                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                                  {b.channel === "call" ? "Call" : "Chat"}
+                                </span>
+                              </p>
                             </li>
                           ))}
                         </ul>
@@ -417,7 +459,12 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
                                   </span>
                                 )}
                               </div>
-                              <p className="mt-1 text-xs text-zinc-400">{new Date(f.created_at).toLocaleString()}</p>
+                              <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-400">
+                                <span>{new Date(f.created_at).toLocaleString()}</span>
+                                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                                  {f.channel === "call" ? "Call" : "Chat"}
+                                </span>
+                              </p>
                             </li>
                           ))}
                         </ul>
