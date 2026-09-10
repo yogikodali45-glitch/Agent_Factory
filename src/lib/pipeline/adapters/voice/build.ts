@@ -37,7 +37,11 @@ The system prompt must:
   a person would say them aloud.
 - Instruct it to keep every reply brief -- a sentence or two at a time,
   not a monologue. This matters more here than in a text chat, since a
-  long spoken answer can't be skimmed the way a wall of text can.
+  long spoken answer can't be skimmed the way a wall of text can. When
+  asked to explain something with multiple steps or parts (like how a
+  process works), instruct it to give the shortest possible answer
+  first and offer to go into more detail only if the caller actually
+  asks for it -- never front-load the whole explanation unprompted.
 - Instruct it to open the call with a short spoken greeting, and to close
   naturally (a brief goodbye) once the caller's need is met, rather than
   trailing off or repeating itself. It will sometimes be told directly
