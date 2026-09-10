@@ -79,6 +79,7 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
   const [promoting, setPromoting] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   const [activity, setActivity] = useState<Activity | null>(null);
   const [activityLoading, setActivityLoading] = useState(false);
@@ -108,14 +109,16 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
     return data;
   }, [id, accessToken]);
 
-  useEffect(() => {
-    if (authLoading || startedRef.current) return;
-    startedRef.current = true;
-    let cancelled = false;
-
-    (async () => {
-      let current = await fetchAgent();
-      while (!cancelled && current && AUTO_CHAIN[current.status]) {
+  // Walks AUTO_CHAIN forward from whatever status `current` is in, until it
+  // lands on a status with no next stage (a terminal state, or one that
+  // needs a real decision -- ready_to_try/deployed/needs_review). Shared
+  // by the initial mount-time run and the manual "Retry test" action below,
+  // so a retry that succeeds keeps going all the way to ready_to_try
+  // instead of stopping at "tested" with no button to continue from there.
+  const runChain = useCallback(
+    async (initial: AgentDetail | null, cancelledRef: { current: boolean }) => {
+      let current = initial;
+      while (!cancelledRef.current && current && AUTO_CHAIN[current.status]) {
         const stage = AUTO_CHAIN[current.status];
         setProgressLabel(stage.label);
         const res = await fetch(stage.url, {
@@ -127,21 +130,33 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
           body: JSON.stringify({ agent_id: id }),
         });
         const data = await res.json();
-        if (!cancelled && data.error) {
+        if (!cancelledRef.current && data.error) {
           setErrorMsg(data.error);
           setProgressLabel(null);
           return;
         }
-        if (cancelled) return;
+        if (cancelledRef.current) return;
         current = await fetchAgent();
       }
-      if (!cancelled) setProgressLabel(null);
+      if (!cancelledRef.current) setProgressLabel(null);
+    },
+    [id, accessToken, fetchAgent]
+  );
+
+  useEffect(() => {
+    if (authLoading || startedRef.current) return;
+    startedRef.current = true;
+    const cancelledRef = { current: false };
+
+    (async () => {
+      const initial = await fetchAgent();
+      await runChain(initial, cancelledRef);
     })();
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
     };
-  }, [authLoading, id, fetchAgent, accessToken]);
+  }, [authLoading, id, fetchAgent, runChain]);
 
   const canTry = agent?.status === "ready_to_try" || agent?.status === "deployed";
   useEffect(() => {
@@ -172,6 +187,37 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
       setChatMessages([...nextMessages, { role: "assistant", content: data.reply ?? `Error: ${data.error}` }]);
     } finally {
       setChatSending(false);
+    }
+  }
+
+  // needs_review is deliberately NOT in AUTO_CHAIN -- retrying costs real
+  // Euri calls, so it happens only on an explicit click, never silently on
+  // page load/refresh. If the retry succeeds, runChain carries it the rest
+  // of the way to ready_to_try; if it lands back in needs_review, the loop
+  // in runChain just exits immediately since that status has no next stage.
+  async function retryTest() {
+    setRetrying(true);
+    setErrorMsg(null);
+    try {
+      setProgressLabel("Testing your agent...");
+      const res = await fetch("/api/test", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ agent_id: id }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setErrorMsg(data.error);
+        setProgressLabel(null);
+        return;
+      }
+      const updated = await fetchAgent();
+      await runChain(updated, { current: false });
+    } finally {
+      setRetrying(false);
     }
   }
 
@@ -234,10 +280,20 @@ export default function AgentPage({ params }: { params: Promise<{ id: string }> 
             </div>
 
             {agent.status === "needs_review" && (
-              <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
-                This agent needs a human look before it can go further — it didn&apos;t pass every check after
-                a few attempts. See the transcript below for what didn&apos;t pass.
-              </p>
+              <div className="flex flex-col gap-3 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950">
+                <p className="text-sm text-amber-800 dark:text-amber-300">
+                  This agent needs a human look before it can go further — it didn&apos;t pass every check after
+                  a few attempts. See the transcript below for what didn&apos;t pass, then retry when you&apos;re
+                  ready.
+                </p>
+                <button
+                  onClick={retryTest}
+                  disabled={retrying}
+                  className="self-start rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+                >
+                  {retrying ? "Retrying..." : "Retry test"}
+                </button>
+              </div>
             )}
 
             {agent.latestTestRun && (
